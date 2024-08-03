@@ -1,0 +1,3 @@
+[submodule "arm-trusted-firmware"]
+	path = arm-trusted-firmware
+	url = git@github.com:ARM-software/arm-trusted-firmware.git

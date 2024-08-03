@@ -1,0 +1,6 @@
+*.img
+*.qcow2
+*.fd
+*.tar.*
+# linux-5.15.115
+optee
