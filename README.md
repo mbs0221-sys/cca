@@ -58,6 +58,8 @@ cloud-localds user-data.img user-data
 
 ```bash
 $ sudo apt install guestfs-tools
+# Resize
+$ qemu-img resize jammy-server-cloudimg-arm64.img 20GB
 # Change the root password
 $ sudo virt-customize -a jammy-server-cloudimg-arm64.img --root-password password:coolpass
 [   0.0] Examining the guest ...

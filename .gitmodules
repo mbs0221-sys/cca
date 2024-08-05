@@ -1,3 +1,9 @@
 [submodule "arm-trusted-firmware"]
 	path = arm-trusted-firmware
 	url = git@github.com:ARM-software/arm-trusted-firmware.git
+[submodule "u-boot"]
+	path = u-boot
+	url = https://source.denx.de/u-boot/u-boot.git
+[submodule "edk2"]
+	path = edk2
+	url = https://github.com/tianocore/edk2.git
