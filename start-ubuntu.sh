@@ -3,35 +3,34 @@
 # CCA root directory
 CCA_ROOT=$(pwd)
 
-NUM_CPUS=16
-MAX_RAM=8192
+NUM_CPUS=4
+MAX_RAM=2048
 
 # TF-A binaries directory
 TFA_DIR=${CCA_ROOT}/arm-trusted-firmware/build/qemu/release
 
 # UEFI binary
-UEFI_BIN=${CCA_ROOT}/QEMU_EFI.fd
+UEFI_BIN=${CCA_ROOT}/u-boot/u-boot.bin
 
 # Build TF-A
-# pushd arm-trusted-firmware
-# make CROSS_COMPILE=aarch64-linux-gnu- PLAT=qemu DEBUG=0 BL33=~/cca/QEMU_EFI.fd clean
-# make CROSS_COMPILE=aarch64-linux-gnu- PLAT=qemu DEBUG=0 BL33=~/cca/QEMU_EFI.fd all fip -j$(nproc)
-# popd
+pushd arm-trusted-firmware
+make CROSS_COMPILE=aarch64-linux-gnu- PLAT=qemu DEBUG=0 BL33=${UEFI_BIN} clean
+make CROSS_COMPILE=aarch64-linux-gnu- PLAT=qemu DEBUG=0 BL33=${UEFI_BIN} all fip -j$(nproc)
 
 # Create a 64MB flash image and write BL1, BL2, BL31, and UEFI to it
-FLASH_IMG=${CCA_ROOT}/flash.img
-dd if=/dev/zero of=${FLASH_IMG} bs=1M count=64
-dd if=${TFA_DIR}/bl1.bin of=${FLASH_IMG} conv=notrunc
-dd if=${TFA_DIR}/fip.bin of=${FLASH_IMG} bs=4096 conv=notrunc
+dd if=build/qemu/release/bl1.bin of=flash.bin bs=4096 conv=notrunc
+dd if=build/qemu/release/fip.bin of=flash.bin seek=64 bs=4096 conv=notrunc
+
+popd
 
 # QEMU command with parameters
 sudo qemu-system-aarch64 \
  -smp ${NUM_CPUS} \
  -m ${MAX_RAM} \
  -cpu cortex-a57 \
- -M virt \
+ -M virt,secure=on \
  -nographic \
- -bios ${FLASH_IMG} \
+ -bios arm-trusted-firmware/flash.bin  \
  -drive if=none,file=${CCA_ROOT}/jammy-server-cloudimg-arm64.img,id=hd0 \
  -device virtio-blk-device,drive=hd0 \
  -device virtio-net-device,netdev=net0 \
