@@ -1,7 +1,43 @@
 #!/bin/bash
 
-ln -s arm-trusted-firmware/build/qemu/release/bl1.bin bl1.bin
-ln -s arm-trusted-firmware/build/qemu/release/bl2.bin bl2.bin
-ln -s arm-trusted-firmware/build/qemu/release/bl31.bin bl31.bin
-ln -s edk2/Build/ArmVirtQemuKernel-AARCH64/RELEASE_GCC5/FV/QEMU_EFI.fd bl33.bin
-ln -s linux/arch/arm64/boot/Image Image
+# CCA root directory
+CCA_ROOT=$(pwd)
+
+# UEFI binary
+UEFI_BIN=${CCA_ROOT}/u-boot/u-boot.bin
+
+sudo apt install libgnutls28-dev
+
+# Build kernel
+pushd linux-5.15.115
+export ARCH=arm64
+export CROSS_COMPILE=aarch64-linux-gnu-
+make defconfig
+make -j16
+popd
+
+# Build u-boot
+pushd u-boot
+export ARCH=arm64
+export CROSS_COMPILE=aarch64-linux-gnu-
+make qemu_arm64_defconfig
+make -j16
+popd
+
+# Build EDK2
+pushd edk2
+git submodule update --init
+make -C BaseTools
+source edksetup.sh
+export GCC5_AARCH64_PREFIX=aarch64-linux-gnu-
+build -a AARCH64 -t GCC5 -p ArmVirtPkg/ArmVirtQemuKernel.dsc -b RELEASE
+popd
+
+# Build TF-A
+pushd arm-trusted-firmware
+make CROSS_COMPILE=aarch64-linux-gnu- PLAT=qemu DEBUG=0 BL33=${UEFI_BIN} clean
+make CROSS_COMPILE=aarch64-linux-gnu- PLAT=qemu DEBUG=0 BL33=${UEFI_BIN} all fip -j$(nproc)
+# Create a 64MB flash image and write BL1, BL2, BL31, and EFI(u-boot) to it
+dd if=build/qemu/release/bl1.bin of=flash.bin bs=4096 conv=notrunc
+dd if=build/qemu/release/fip.bin of=flash.bin seek=64 bs=4096 conv=notrunc
+popd
