@@ -41,3 +41,14 @@ make CROSS_COMPILE=aarch64-linux-gnu- PLAT=qemu DEBUG=0 BL33=${UEFI_BIN} all fip
 dd if=build/qemu/release/bl1.bin of=flash.bin bs=4096 conv=notrunc
 dd if=build/qemu/release/fip.bin of=flash.bin seek=64 bs=4096 conv=notrunc
 popd
+
+# Build buildroot
+test -f buildroot-2024.05.tar.xz || wget https://buildroot.org/downloads/buildroot-2024.05.tar.xz
+test -d buildroot-2024.05 || tar xf buildroot-2024.05.tar.xz
+pushd buildroot-2024.05
+make qemu_arm64_virt_defconfig
+utils/config -e BR2_TARGET_ROOTFS_CPIO
+utils/config -e BR2_TARGET_ROOTFS_CPIO_GZIP
+make olddefconfig
+make -j$(nproc)
+popd

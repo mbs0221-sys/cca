@@ -40,8 +40,6 @@ $ axel -n 10 https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg
 $ dd if=/dev/zero of=flash0.img bs=1M count=64
 ```
 
-[Using Cloud Images With KVM](https://serverascode.com/2018/06/26/using-cloud-images.html)
-
 ```bash
 # Install the cloud-image-utils
 sudo apt-get install cloud-image-utils
@@ -99,3 +97,11 @@ Child node '/file':
     file length: 598 MiB (626720768 bytes)
     disk size: 598 MiB
 ```
+
+## References
+
+[Using Cloud Images With KVM](https://serverascode.com/2018/06/26/using-cloud-images.html)
+
+[qemu 对 ARMv8的支持](https://blog.csdn.net/u011011827/article/details/123843917)
+
+[qemu: boot aarch64, with ATF(arm trusted firmware) and EDK2 firmware](https://www.linkedin.com/pulse/qemu-boot-aarch64-atfarm-trusted-firmware-edk2-nikos-mouzakitis/)
