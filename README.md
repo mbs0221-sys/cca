@@ -98,6 +98,29 @@ Child node '/file':
     disk size: 598 MiB
 ```
 
+### Ubuntu
+
+```bash
+sudo apt build-dep linux linux-image-unsigned-$(uname -r)
+sudo apt install libncurses-dev gawk flex bison openssl libssl-dev dkms libelf-dev libudev-dev libpci-dev libiberty-dev autoconf llvm
+sudo apt install git
+apt source linux-image-unsigned-$(uname -r)
+```
+
+```bash
+export $(dpkg-architecture -aarm64)
+export CROSS_COMPILE=aarch64-linux-gnu-
+apt source linux-image-unsigned-$(uname -r)
+cd linux-5.15.0
+chmod a+x debian/rules
+chmod a+x debian/scripts/*
+chmod a+x debian/scripts/misc/*
+fakeroot debian/rules clean
+fakeroot debian/rules editconfigs # you need to go through each (Y, Exit, Y, Exit..) or get a complaint about config later
+fakeroot debian/rules clean
+fakeroot debian/rules binary-headers binary-generic binary-perarch
+```
+
 ## References
 
 [Using Cloud Images With KVM](https://serverascode.com/2018/06/26/using-cloud-images.html)
@@ -105,3 +128,9 @@ Child node '/file':
 [qemu 对 ARMv8的支持](https://blog.csdn.net/u011011827/article/details/123843917)
 
 [qemu: boot aarch64, with ATF(arm trusted firmware) and EDK2 firmware](https://www.linkedin.com/pulse/qemu-boot-aarch64-atfarm-trusted-firmware-edk2-nikos-mouzakitis/)
+
+[how to build ubuntu for arm64? (how to give ARCH and CROSS_COMPILE variable to `debian/rules` command)](https://unix.stackexchange.com/questions/656263/how-to-build-ubuntu-for-arm64-how-to-give-arch-and-cross-compile-variable-to)
+
+[Kernel/BuildYourOwnKernel - Ubuntu Wiki](https://wiki.ubuntu.com/Kernel/BuildYourOwnKernel)
+
+[KernelTeam/ARMKernelCrossCompile - Ubuntu Wiki](https://wiki.ubuntu.com/KernelTeam/ARMKernelCrossCompile)

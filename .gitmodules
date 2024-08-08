@@ -7,3 +7,6 @@
 [submodule "edk2"]
 	path = edk2
 	url = https://github.com/tianocore/edk2.git
+[submodule "mainline"]
+	path = mainline
+	url = git://git.launchpad.net/~ubuntu-kernel-test/ubuntu/+source/linux/+git/linus--linux
