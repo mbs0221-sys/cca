@@ -1,0 +1,112 @@
+---
+- hosts: all
+  become: yes
+  become_method: sudo
+  become_user: root
+  vars:
+    ansible_become_pass: "asdf0987"
+  tasks:
+    - name: Configure global APT proxy
+      copy:
+        dest: /etc/apt/apt.conf.d/95proxies
+        content: |
+          Acquire::http::Proxy "http://localhost:5566/";
+          Acquire::https::Proxy "http://localhost:5566/";
+          Acquire::ftp::Proxy "http://localhost:5566/";
+
+    - name: Disable IPv6 and force IPv4 for APT
+      copy:
+        dest: /etc/apt/apt.conf.d/99force-ipv4
+        content: |
+          Acquire::ForceIPv4 "true";
+
+    # - name: Download Docker GPG key using wget
+      # command: wget -e use_proxy=yes -e https_proxy=https://localhost:5566 -O /tmp/docker.gpg https://download.docker.com/linux/ubuntu/gpg
+
+    - name: Download Docker GPG key using Ansible get_url
+      get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /tmp/docker.gpg
+      environment:
+        http_proxy: "http://localhost:5566"
+        https_proxy: "http://localhost:5566"
+
+    - name: Check if Docker GPG keyring exists
+      stat:
+        path: /usr/share/keyrings/docker-archive-keyring.gpg
+      register: gpg_keyring
+
+    - name: Add Docker GPG key to keyring if not exists
+      command: gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg /tmp/docker.gpg
+      when: not gpg_keyring.stat.exists
+
+    - name: Get Ubuntu codename
+      shell: lsb_release -cs
+      register: ubuntu_codename
+
+    - name: Add Docker repository to sources list
+      copy:
+        dest: /etc/apt/sources.list.d/docker.list
+        content: |
+          deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu {{ ubuntu_codename.stdout }} stable
+
+    - name: Update package list
+      apt:
+        update_cache: yes
+      environment:
+        http_proxy: ""
+        https_proxy: ""
+
+    - name: Install Docker
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: present
+
+    - name: Install OpenMPI
+      apt:
+        name: openmpi-bin
+        state: present
+
+    - name: Install pip and venv
+      apt:
+        name:
+          - python3-pip
+          - python3-venv
+        state: present
+
+    - name: Create a virtual environment for Ray
+      command: python3 -m venv ~/.venv
+      when: not ansible_check_mode # Skip if in check mode
+
+    - name: Install Ray in virtual environment
+      command: ~/.venv/bin/pip install ray
+      environment:
+        http_proxy: ""
+        https_proxy: ""
+
+    - name: Verify Docker installation
+      command: docker --version
+      register: docker_version
+
+    - name: Verify OpenMPI installation
+      command: mpirun --version
+      register: openmpi_version
+
+    - name: Verify Ray installation
+      command: ~/.venv/bin/python -c "import ray; print(ray.__version__)"
+      register: ray_version
+
+    - name: Print Docker version
+      debug:
+        msg: "Docker version: {{ docker_version.stdout }}"
+
+    - name: Print OpenMPI version
+      debug:
+        msg: "OpenMPI version: {{ openmpi_version.stdout }}"
+
+    - name: Print Ray version
+      debug:
+        msg: "Ray version: {{ ray_version.stdout }}"

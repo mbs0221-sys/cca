@@ -3,6 +3,9 @@
 *.fd
 *.tar.*
 *.deb
+*.diff.*
+*.dsc
+*.bin
 linux-5.15.115
-# linux-5.15.117
+linux-hwe-6.5-6.5.0
 optee
