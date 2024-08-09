@@ -6,6 +6,7 @@
 *.diff.*
 *.dsc
 *.bin
+.history
 linux-5.15.115
 linux-hwe-6.5-6.5.0
 optee

@@ -10,3 +10,6 @@
 [submodule "mainline"]
 	path = mainline
 	url = git://git.launchpad.net/~ubuntu-kernel-test/ubuntu/+source/linux/+git/linus--linux
+[submodule "buildroot"]
+	path = buildroot
+	url = git://git.buildroot.net/buildroot.git
