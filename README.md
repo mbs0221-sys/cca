@@ -16,32 +16,25 @@ describing PSCI and also enable methods for the CPUs. If ARM_LINUX_KERNEL_AS_BL3
 
 ## Installation
 
-### Dependencies
+### QEMU
 
-```bash
-# Download the QEMU_EFI image, extract and gunzip it
-$ wget https://releases.linaro.org/components/kernel/uefi-linaro/16.02/release/qemu64/QEMU_EFI.img.gz
-$ tar -xvf QEMU_EFI.img.gz
-$ gunzip QEMU_EFI.img.gz
-# Download the linux kernel and extract it
-$ wget https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.15.115.tar.xz
-$ tar -xvf linux-5.15.115.tar.xz
-```
-
-### qemu
+[Download QEMU](https://www.qemu.org/download)
 
 ```bash
 # Install dependencies
 sudo apt-get install build-essential gcc pkg-config glib-2.0 libglib2.0-dev libsdl1.2-dev libaio-dev libcap-dev libattr1-dev libpixman-1-dev
 # Install required packages
 pip install sphinx sphinx_rtd_theme
+# Download qemu source code
+wget https://download.qemu.org/qemu-8.2.6.tar.xz
+tar -xvf qemu-8.2.6.tar.xz
 # Build qemu
-cd qemu
-mkdir -p build && cd build
-../configure
+cd qemu-9.1.0-rc1
+./configure
+make -j$(nproc)
 ```
 
-### edk2
+### EDK2
 
 Using edk2 in order to create the QEMU_EFI.fd firmware file for the aarch64 emulation in QEMU.
 
@@ -66,6 +59,13 @@ build -a AARCH64 -t GCC5 -p ArmVirtPkg/ArmVirtQemuKernel.dsc
 ```
 
 Then, you will get `Build/ArmVirtQemuKernel-AARCH64/DEBUG_GCC5/FV/QEMU_EFI.fd`. Also, we copy the generated `QEMU_EFI.fd` into the arm-trusted-firmware directory as `QEMU_edk2_EFI.fd`.
+
+```bash
+# Download the QEMU_EFI image, extract and gunzip it
+$ wget https://releases.linaro.org/components/kernel/uefi-linaro/16.02/release/qemu64/QEMU_EFI.img.gz
+$ tar -xvf QEMU_EFI.img.gz
+$ gunzip QEMU_EFI.img.gz
+```
 
 ### buildroot
 
@@ -95,7 +95,8 @@ prerequisites:
 * libssl-dev
 
 ```bash
-make BL33=QEMU_edk2_EFI.fd CROSS_COMPILE=aarch64-linux-gnu- PLAT=qemu all fip
+ln -s ~/cca/edk2/Build/ArmVirtQemuKernel-AARCH64/DEBUG_GCC5/FV/QEMU_EFI.fd
+make BL33=QEMU_EFI.fd CROSS_COMPILE=aarch64-linux-gnu- PLAT=qemu all fip
 dd if=build/qemu/release/bl1.bin of=flash.bin bs=4096 conv=notrunc
 dd if=build/qemu/release/fip.bin of=flash.bin seek=64 bs=4096 conv=notrunc
 ```
@@ -108,11 +109,48 @@ $ cd ~/cca/arm-trusted-firmware
 $ make CROSS_COMPILE=aarch64-linux-gnu- PLAT=qemu all fip DEBUG=0 BL33=~/cca/QEMU_EFI.fd
 ```
 
-## Root FS
+### Kernel
+
+```bash
+# Download the linux kernel and extract it
+$ wget https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.15.115.tar.xz
+$ tar -xvf linux-5.15.115.tar.xz
+```
+
+```bash
+cd linux
+make ARCH=arm64 mrproper
+make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- defconfig
+make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- dtbs
+make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- -j128
+```
+
+### busybox
+
+```bash
+$ test -f busybox-1.36.1.tar.bz2 || wget https://busybox.net/downloads/busybox-1.36.1.tar.bz2
+$ tar -xvf busybox-1.36.1.tar.bz2
+$ cd busybox-1.36.1
+$ export ARCH=arm64
+$ export CROSS_COMPILE=aarch64-linux-gnu-
+$ make menuconfig
+Settings  --->
+[*] Build static binary (no shared libs)    //静态编译
+[*] Build with debug information       //可选，带调试信息，方便后续调试
+$ make; make install
+```
+
+busybox 根目录下_install/ 就是根文件系统了
+
+[qemu 搭建 arm64 linux kernel 调试环境](https://xie.infoq.cn/article/3415445f1c8831423a94c4bc2)
+
+[用busybox制作initramfs并启动](https://cs.pynote.net/sf/linux/sys/202111123/)
+
+## Build RootFS
 
 ### Buildroot Image
 
-In this initial script, we use the rottfs.cpio.gz and the Image built previously with the Buildroot.
+In this initial script, we use the rootfs.cpio.gz and the Image built previously with the Buildroot.
 
 ```bash
 qemu-system-aarch64 -nographic \
@@ -142,6 +180,26 @@ $ dd if=/usr/share/qemu-efi-aarch64/QEMU_EFI.fd of=efi.img conv=notrunc
 $ axel -n 10 https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-arm64.img
 # Resize the image to 32G
 $ dd if=/dev/zero of=flash0.img bs=1M count=64
+```
+
+```bash
+# Download the cloudimg rootfs
+$ wget https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-arm64-root.tar.xz
+$ wget https://cloud-images.ubuntu.com/releases/22.04/release/ubuntu-22.04-server-cloudimg-arm64-root.tar.xz
+$ sudo virt-customize -a rootfs.qcow2 --root-password password:coolpass
+[   0.0] Examining the guest ...
+[   2.6] Setting a random seed
+[   2.6] Setting passwords
+[   3.7] Finishing off
+$ sudo virt-customize -a rootfs.qcow2 --password ubuntu:password:coolpass
+[   0.0] Examining the guest ...
+[   2.5] Setting a random seed
+[   2.6] Setting passwords
+[   3.6] Finishing off
+```
+
+```bash
+docker build -t rootfs-to-qcow2 .
 ```
 
 Prepare user-data for cloud-init.
@@ -272,8 +330,16 @@ fakeroot debian/rules binary-headers binary-generic binary-perarch
 
 [how to build ubuntu for arm64? (how to give ARCH and CROSS_COMPILE variable to `debian/rules` command)](https://unix.stackexchange.com/questions/656263/how-to-build-ubuntu-for-arm64-how-to-give-arch-and-cross-compile-variable-to)
 
+[QEMU_BOOT_aarch64_atf_edk2_firmware](https://github.com/NikosMouzakitis/QEMU_BOOT_aarch64_atf_edk2_firmware)
+
 [Kernel/BuildYourOwnKernel - Ubuntu Wiki](https://wiki.ubuntu.com/Kernel/BuildYourOwnKernel)
 
 [KernelTeam/ARMKernelCrossCompile - Ubuntu Wiki](https://wiki.ubuntu.com/KernelTeam/ARMKernelCrossCompile)
 
 [MainlineBuilds](https://wiki.ubuntu.com/Kernel/MainlineBuilds)
+
+[在x64linux下编译Qemu](https://silentming.net/blog/2015/11/23/compile-qemu-in-linux-x86/)
+
+[基于 Ubuntu Base 制作 rootfs](https://blog.csdn.net/lyndon_li/article/details/129510187)
+
+[Building an RME stack for QEMU](https://linaro.atlassian.net/wiki/spaces/QEMU/pages/29051027459/Building+an+RME+stack+for+QEMU#Guest-disk-image-for-edk2)

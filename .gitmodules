@@ -13,3 +13,6 @@
 [submodule "buildroot"]
 	path = buildroot
 	url = git://git.buildroot.net/buildroot.git
+[submodule "linux"]
+	path = linux
+	url = git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
