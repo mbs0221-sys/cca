@@ -199,6 +199,16 @@ $ sudo virt-customize -a rootfs.qcow2 --password ubuntu:password:coolpass
 ```
 
 ```bash
+# 屏蔽 snapd, snapd.socket, systemd-remount-fs 和 multipathd 服务
+systemctl --failed
+sudo systemctl mask systemd-remount-fs.service
+sudo systemctl mask snapd.service
+sudo systemctl mask snapd.socket
+sudo systemctl mask multipathd.service
+sudo systemctl mask multipathd.socket
+```
+
+```bash
 docker build -t rootfs-to-qcow2 .
 ```
 
