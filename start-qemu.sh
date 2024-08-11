@@ -1,7 +1,7 @@
 #!/bin/bash
 
-NUM_CPUS=8
-MAX_RAM=4096
+NUM_CPUS=16
+MAX_RAM=8192
 
 CPU_FEATURES="pmu=off,sve=on,sve128=on,sve256=on,neon=on"
 CPU="${CPU},$CPU_FEATURES"

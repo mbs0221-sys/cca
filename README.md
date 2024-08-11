@@ -351,7 +351,12 @@ cargo build --release
 On host
 
 ```bash
-host# ./target/release/virtiofsd --socket-path=/tmp/vhostqemu -o source=$HOME -o cache=always
+cd linux
+./scripts/config --module VIRTIO_FS
+```
+
+```bash
+host$ ./target/release/virtiofsd --socket-path=/tmp/vhostqemu -o source=$HOME -o cache=always
 ```
 
 On guest
