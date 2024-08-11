@@ -125,6 +125,17 @@ make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- dtbs
 make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- -j128
 ```
 
+Install kernel modules to rootfs
+
+```bash
+mkdir rootfs
+sudo qemu-nbd --connect=/dev/nbd0 rootfs.qcow2
+sudo mount /dev/nbd0p1 rootfs
+sudo make modules_install INSTALL_MOD_PATH=/home/benshan/cca/rootfs
+sudo umount rootfs
+sudo qemu-nbd --disconnect /dev/nbd0
+```
+
 ### busybox
 
 ```bash
