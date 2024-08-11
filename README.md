@@ -341,6 +341,25 @@ fakeroot debian/rules clean
 fakeroot debian/rules binary-headers binary-generic binary-perarch
 ```
 
+## virtio-fs
+
+```bash
+cd virtiofsd
+cargo build --release
+```
+
+On host
+
+```bash
+host# ./target/release/virtiofsd --socket-path=/tmp/vhostqemu -o source=$HOME -o cache=always
+```
+
+On guest
+
+```bash
+guest# mount -t virtiofs myfs /mnt
+```
+
 ## References
 
 [Using Cloud Images With KVM](https://serverascode.com/2018/06/26/using-cloud-images.html)
@@ -364,3 +383,5 @@ fakeroot debian/rules binary-headers binary-generic binary-perarch
 [基于 Ubuntu Base 制作 rootfs](https://blog.csdn.net/lyndon_li/article/details/129510187)
 
 [Building an RME stack for QEMU](https://linaro.atlassian.net/wiki/spaces/QEMU/pages/29051027459/Building+an+RME+stack+for+QEMU#Guest-disk-image-for-edk2)
+
+[Standalone virtiofs usage](https://virtio-fs.gitlab.io/howto-qemu.html)

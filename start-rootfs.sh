@@ -23,6 +23,10 @@ sudo qemu-system-aarch64 \
     -drive format=qcow2,if=none,file=rootfs.qcow2,id=hd0 \
     -device virtio-blk-device,drive=hd0 \
     -virtfs local,path="${HOME_DIR}",mount_tag=host0,security_model=mapped,id=host0 \
+    -chardev socket,id=char0,path=/tmp/vhostqemu \
+    -device vhost-user-fs-pci,queue-size=1024,chardev=char0,tag=myfs \
+    -object memory-backend-memfd,id=mem,size=4G,share=on \
+    -numa node,memdev=mem \
     -object rng-random,filename=/dev/urandom,id=rng0 \
     -device virtio-rng-pci,rng=rng0,max-bytes=1024,period=1000 \
     -device virtio-net-device,netdev=net0 \
